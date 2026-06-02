@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "../lib/auth";
 import Icon from "../components/Icon";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -39,11 +40,21 @@ export default function LoginPage() {
         <div className="relative z-10">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-primary to-lime-600 flex items-center justify-center shadow-[0_6px_20px_rgba(22,163,74,0.4)]">
+            {/* <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-primary to-lime-600 flex items-center justify-center shadow-[0_6px_20px_rgba(22,163,74,0.4)]">
               <Icon name="sprout" size={28} className="text-white" />
-            </div>
+            </div> */}
             <div>
-              <div className="font-extrabold text-xl text-white">Dronagiri Farm</div>
+              <div className="font-extrabold text-xl text-white">
+                <Image
+              className="invert"
+              src="/logo2.png"
+              alt="Dronagiri Farm Logo"
+               width={200}
+               height={150}
+               loading="eager"
+               style={{ width: "100%", height: "auto" }}
+                 />
+              </div>
               <div className="text-[13px] text-white/55">Admin Portal</div>
             </div>
           </div>
