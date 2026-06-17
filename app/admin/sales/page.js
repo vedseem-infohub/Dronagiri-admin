@@ -1,20 +1,156 @@
 "use client";
 
-import { useState } from "react";
-import { DAILY_SALES, MONTHLY_SALES, CATEGORY_SALES, PRODUCTS, ORDERS } from "../lib/mockData";
+import { useState, useEffect } from "react";
 import StatsCard from "../components/StatsCard";
 import Icon from "../components/Icon";
+import { adminFetch } from "../lib/auth";
 
 const SEG_COLORS = ["#22c55e", "#d97706", "#3b82f6", "#a855f7", "#f43f5e", "#06b6d4", "#f59e0b", "#84cc16"];
 
+function getDailySales(orders) {
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const daily = [];
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    const label = days[d.getDay()];
+    
+    const dayOrders = orders.filter(o => o.date === dateStr);
+    const revenue = dayOrders.filter(o => o.status === "Delivered").reduce((sum, o) => sum + o.total, 0);
+    
+    daily.push({
+      label,
+      revenue,
+      orders: dayOrders.length
+    });
+  }
+  return daily;
+}
+
+function getMonthlySales(orders) {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthly = [];
+  
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    const year = d.getFullYear();
+    const monthIdx = d.getMonth();
+    const label = months[monthIdx];
+    
+    const monthOrders = orders.filter(o => {
+      if (!o.date) return false;
+      const [oYear, oMonth] = o.date.split("-");
+      return Number(oYear) === year && Number(oMonth) === (monthIdx + 1);
+    });
+    
+    const revenue = monthOrders.filter(o => o.status === "Delivered").reduce((sum, o) => sum + o.total, 0);
+    
+    monthly.push({
+      label,
+      revenue,
+      orders: monthOrders.length
+    });
+  }
+  return monthly;
+}
+
+function getCategorySales(orders, products) {
+  const categoryTotals = {};
+  let totalDeliveredRevenue = 0;
+  
+  orders.filter(o => o.status === "Delivered").forEach(o => {
+    o.items.forEach(item => {
+      const prod = products.find(p => p.id === item.productId || p.name === item.name);
+      const category = prod?.category || "Spices";
+      const itemRevenue = item.price * item.qty;
+      
+      categoryTotals[category] = (categoryTotals[category] || 0) + itemRevenue;
+      totalDeliveredRevenue += itemRevenue;
+    });
+  });
+  
+  const categoriesList = Object.keys(categoryTotals);
+  if (categoriesList.length === 0) {
+    return [
+      { category: "Spices", revenue: 0, pct: 0 },
+      { category: "Millets", revenue: 0, pct: 0 },
+      { category: "Pulses", revenue: 0, pct: 0 },
+      { category: "Rice", revenue: 0, pct: 0 },
+    ];
+  }
+  
+  return categoriesList.map(cat => {
+    const revenue = categoryTotals[cat];
+    const pct = totalDeliveredRevenue ? Math.round((revenue / totalDeliveredRevenue) * 100) : 0;
+    return {
+      category: cat,
+      revenue,
+      pct
+    };
+  }).sort((a, b) => b.revenue - a.revenue);
+}
+
 export default function SalesPage() {
   const [period, setPeriod] = useState("weekly");
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSalesData = async () => {
+      try {
+        setLoading(true);
+        const prodRes = await adminFetch("http://localhost:8000/api/products?includeInactive=true");
+        if (prodRes.ok) {
+          const data = await prodRes.json();
+          setProducts(data);
+        }
+
+        const ordRes = await adminFetch("http://localhost:8000/api/orders/all");
+        if (ordRes.ok) {
+          const data = await ordRes.json();
+          const mapped = data.map(o => ({
+            id: o.orderId,
+            customer: o.customer?.name || "Anonymous",
+            phone: o.customer?.phone || "",
+            address: o.customer?.address || "",
+            items: (o.items || []).map(item => ({
+              name: item.name,
+              variant: item.quantity,
+              qty: item.count,
+              price: item.price,
+              imageUrl: item.imageUrl || ""
+            })),
+            total: o.total,
+            status: o.status === "Order Sent to Admin" ? "Pending" : o.status,
+            date: o.createdAt ? o.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+            payment: o.paymentMethod ? o.paymentMethod.toUpperCase() : "COD"
+          }));
+          setOrders(mapped);
+        }
+      } catch (err) {
+        console.error("Error loading sales data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSalesData();
+  }, []);
+
+  const DAILY_SALES = getDailySales(orders);
+  const MONTHLY_SALES = getMonthlySales(orders);
+  const CATEGORY_SALES = getCategorySales(orders, products);
+
   const data = period === "monthly" ? MONTHLY_SALES : DAILY_SALES;
-  const maxRev = Math.max(...data.map(d => d.revenue));
+  const maxRev = Math.max(...data.map(d => d.revenue), 1); // default to 1 if empty
   const totalRev = data.reduce((s, d) => s + d.revenue, 0);
   const totalOrders = data.reduce((s, d) => s + d.orders, 0);
   const avgOrder = totalOrders ? Math.round(totalRev / totalOrders) : 0;
-  const topProduct = [...PRODUCTS].sort((a, b) => b.sold - a.sold)[0];
+  const topProduct = products.slice().sort((a, b) => (b.sold || 0) - (a.sold || 0))[0] || { name: "No products", sold: 0 };
 
   // SVG donut
   const donutR = 60, donutCX = 80, donutCY = 80, donutCirc = 2 * Math.PI * donutR;
@@ -25,6 +161,20 @@ export default function SalesPage() {
     offset += dash;
     return seg;
   });
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 12 }}>
+        <div style={{ width: 40, height: 40, border: "4px solid #22c55e", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Harvesting sales data insights...</p>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -140,20 +290,23 @@ export default function SalesPage() {
           <div className="admin-card animate-fadeInUp p-5">
             <h2 className="text-sm font-bold text-text mb-3.5">Top Sellers</h2>
             <div className="flex flex-col gap-2.5">
-              {[...PRODUCTS].sort((a, b) => b.sold - a.sold).slice(0, 5).map((p, i) => (
-                <div key={p.id}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs text-text">{p.name}</span>
-                    <span className="text-xs text-text-muted">{p.sold} sold</span>
+              {[...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 5).map((p, i) => {
+                const maxSold = Math.max(...products.map(x => x.sold || 0), 1);
+                return (
+                  <div key={p.id}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs text-text">{p.name}</span>
+                      <span className="text-xs text-text-muted">{(p.sold || 0)} sold</span>
+                    </div>
+                    <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-600 ease-out" style={{
+                        width: `${((p.sold || 0) / maxSold) * 100}%`,
+                        background: `linear-gradient(90deg, ${SEG_COLORS[i]}, ${SEG_COLORS[i]}aa)`,
+                      }} />
+                    </div>
                   </div>
-                  <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-600 ease-out" style={{
-                      width: `${(p.sold / PRODUCTS[0].sold) * 100}%`,
-                      background: `linear-gradient(90deg, ${SEG_COLORS[i]}, ${SEG_COLORS[i]}aa)`,
-                    }} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

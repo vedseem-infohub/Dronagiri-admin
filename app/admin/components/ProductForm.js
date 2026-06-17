@@ -188,25 +188,20 @@ export default function ProductForm({ initial, onSave, onCancel }) {
       </div>
 
       {/* ── Images ── */}
-      {isEdit ? (
-        /* Edit: show both image slots */
-        <div className="grid grid-cols-2 gap-x-4">
-          <ImageUploadZone
-            label="Product Image"
-            image={form.imageUrl}
-            onImage={(v) => update("imageUrl", v)}
-            hint="Main product image"
-          />
-        </div>
-      ) : (
-        /* Add: single image slot */
+      <div className="grid grid-cols-2 gap-x-4">
         <ImageUploadZone
-          label="Product Image"
+          label="Main Product Image"
           image={form.imageUrl}
           onImage={(v) => update("imageUrl", v)}
-          hint="PNG, JPG, WEBP · Max 5MB"
+          hint="Shown by default"
         />
-      )}
+        <ImageUploadZone
+          label="Hover Product Image"
+          image={form.imageUrl2}
+          onImage={(v) => update("imageUrl2", v)}
+          hint="Shown on hover"
+        />
+      </div>
 
       {/* ── Variants ── */}
       <div className="mb-4">

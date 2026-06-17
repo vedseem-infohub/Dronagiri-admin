@@ -1,49 +1,172 @@
 "use client";
 
-import { useState } from "react";
-import { PRODUCTS as INITIAL_PRODUCTS, CATEGORIES } from "../lib/mockData";
+import { useState, useEffect } from "react";
+import { CATEGORIES } from "../lib/mockData";
 import Modal from "../components/Modal";
 import ProductForm from "../components/ProductForm";
 import Icon from "../components/Icon";
+import { adminFetch } from "../lib/auth";
+
+const BACKEND_URL = "http://localhost:8000/api/products";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [addModal, setAddModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await adminFetch(`${BACKEND_URL}?includeInactive=true`);
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(data);
+      } else {
+        let errMsg = `Failed to fetch products: Server returned ${res.status}`;
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch {
+          try {
+            const text = await res.text();
+            const match = text.match(/<pre>([\s\S]*?)<\/pre>/) || text.match(/<title>([\s\S]*?)<\/title>/);
+            errMsg = match ? match[1].trim() : text.slice(0, 150) || errMsg;
+          } catch {}
+        }
+        console.error(errMsg);
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+      alert(`Error connecting to backend: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const filtered = products.filter(p => {
     const q = search.toLowerCase();
-    const matchSearch = !q || p.name.toLowerCase().includes(q) || p.nameHindi.includes(q);
+    const matchSearch = !q || p.name.toLowerCase().includes(q) || (p.nameHindi && p.nameHindi.toLowerCase().includes(q));
     const matchCat = categoryFilter === "All" || p.category === categoryFilter;
     return matchSearch && matchCat;
   });
 
-  function handleAdd(data) {
-    const newProduct = {
-      ...data,
-      id: Date.now(),
-      sold: 0,
-      image: "🌿",
-    };
-    setProducts(prev => [newProduct, ...prev]);
-    setAddModal(false);
+  async function handleAdd(data) {
+    try {
+      const res = await adminFetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const newProduct = await res.json();
+        setProducts(prev => [newProduct, ...prev]);
+        setAddModal(false);
+      } else {
+        let errMsg = "Failed to add product";
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch {
+          try {
+            const text = await res.text();
+            const match = text.match(/<pre>([\s\S]*?)<\/pre>/) || text.match(/<title>([\s\S]*?)<\/title>/);
+            errMsg = match ? match[1].trim() : text.slice(0, 150) || errMsg;
+          } catch {}
+        }
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error("Add product error:", err);
+      alert(`Error connecting to backend: ${err.message}`);
+    }
   }
 
-  function handleEdit(data) {
-    setProducts(prev => prev.map(p => p.id === editProduct.id ? { ...p, ...data } : p));
-    setEditProduct(null);
+  async function handleEdit(data) {
+    try {
+      const res = await adminFetch(`${BACKEND_URL}/${editProduct.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const updatedProduct = await res.json();
+        setProducts(prev => prev.map(p => p.id === editProduct.id ? updatedProduct : p));
+        setEditProduct(null);
+      } else {
+        let errMsg = "Failed to save product";
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch {
+          try {
+            const text = await res.text();
+            const match = text.match(/<pre>([\s\S]*?)<\/pre>/) || text.match(/<title>([\s\S]*?)<\/title>/);
+            errMsg = match ? match[1].trim() : text.slice(0, 150) || errMsg;
+          } catch {}
+        }
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error("Edit product error:", err);
+      alert(`Error connecting to backend: ${err.message}`);
+    }
   }
 
-  function handleDelete() {
-    setProducts(prev => prev.filter(p => p.id !== deleteProduct.id));
-    setDeleteProduct(null);
+  async function handleDelete() {
+    try {
+      const res = await adminFetch(`${BACKEND_URL}/${deleteProduct.id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        setProducts(prev => prev.filter(p => p.id !== deleteProduct.id));
+        setDeleteProduct(null);
+      } else {
+        let errMsg = "Failed to delete product";
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch {
+          try {
+            const text = await res.text();
+            const match = text.match(/<pre>([\s\S]*?)<\/pre>/) || text.match(/<title>([\s\S]*?)<\/title>/);
+            errMsg = match ? match[1].trim() : text.slice(0, 150) || errMsg;
+          } catch {}
+        }
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error("Delete product error:", err);
+      alert(`Error connecting to backend: ${err.message}`);
+    }
   }
 
-  function toggleActive(id) {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+  async function toggleActive(id) {
+    const prod = products.find(p => p.id === id);
+    if (!prod) return;
+    try {
+      const res = await adminFetch(`${BACKEND_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !prod.active })
+      });
+      if (res.ok) {
+        const updatedProduct = await res.json();
+        setProducts(prev => prev.map(p => p.id === id ? updatedProduct : p));
+      } else {
+        console.error("Failed to toggle status:", res.statusText);
+      }
+    } catch (err) {
+      console.error("Toggle active error:", err);
+    }
   }
 
   return (

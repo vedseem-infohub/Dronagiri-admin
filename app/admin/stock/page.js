@@ -1,15 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import { PRODUCTS as INITIAL } from "../lib/mockData";
+import { useState, useEffect } from "react";
 import Icon from "../components/Icon";
+import { adminFetch } from "../lib/auth";
 
 export default function StockPage() {
-  const [products, setProducts] = useState(INITIAL);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await adminFetch("http://localhost:8000/api/products?includeInactive=true");
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(data);
+      }
+    } catch (err) {
+      console.error("Error fetching products for stock:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const filtered = products.filter(p => {
     const q = search.toLowerCase();
@@ -31,16 +51,48 @@ export default function StockPage() {
     setEditValue(String(p.stock));
   }
 
-  function saveEdit(id) {
+  async function saveEdit(id) {
     const val = parseInt(editValue, 10);
     if (!isNaN(val) && val >= 0) {
-      setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: val } : p));
+      try {
+        const res = await adminFetch(`http://localhost:8000/api/products/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stock: val })
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setProducts(prev => prev.map(p => p.id === id ? updated : p));
+        } else {
+          alert("Failed to save stock in database");
+        }
+      } catch (err) {
+        console.error("Save stock error:", err);
+        alert("Error saving stock: " + err.message);
+      }
     }
     setEditingId(null);
   }
 
-  function adjustStock(id, delta) {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: Math.max(0, p.stock + delta) } : p));
+  async function adjustStock(id, delta) {
+    const p = products.find(prod => prod.id === id);
+    if (!p) return;
+    const newVal = Math.max(0, p.stock + delta);
+    try {
+      const res = await adminFetch(`http://localhost:8000/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stock: newVal })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProducts(prev => prev.map(prod => prod.id === id ? updated : prod));
+      } else {
+        console.error("Failed to adjust stock on server");
+      }
+    } catch (err) {
+      console.error("Adjust stock error:", err);
+    }
   }
 
   const stockStatus = (s) => s === 0 ? ["badge-red", "Out of Stock"] : s <= 5 ? ["badge-red", "Critical"] : s <= 10 ? ["badge-amber", "Low Stock"] : ["badge-green", "In Stock"];
@@ -108,7 +160,9 @@ export default function StockPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={6} className="text-center text-text-muted p-10">Loading products stock...</td></tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan={6} className="text-center text-text-muted p-10">No products found</td></tr>
               ) : filtered.map(p => {
                 const [badgeCls, statusLabel] = stockStatus(p.stock);
@@ -119,7 +173,13 @@ export default function StockPage() {
                   <tr key={p.id}>
                     <td>
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-base">{p.image}</div>
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-base overflow-hidden border border-border">
+                          {p.imageUrl ? (
+                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Icon name="sprout" size={16} className="text-green-600" />
+                          )}
+                        </div>
                         <div>
                           <div className="font-semibold text-text text-xs">{p.name}</div>
                           {p.nameHindi && <div className="text-[11px] text-text-muted">{p.nameHindi}</div>}

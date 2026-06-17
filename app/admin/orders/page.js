@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { ORDERS } from "../lib/mockData";
+import { useState, useEffect } from "react";
 import Modal from "../components/Modal";
 import Icon from "../components/Icon";
+import { adminFetch } from "../lib/auth";
 
 const ALL_STATUSES = ["All", "Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"];
 
@@ -18,10 +18,49 @@ const nextStatus = {
 };
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState(ORDERS);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await adminFetch("http://localhost:8000/api/orders/all");
+      if (res.ok) {
+        const data = await res.json();
+        const mapped = data.map(o => ({
+          id: o.orderId,
+          customer: o.customer?.name || "Anonymous",
+          phone: o.customer?.phone || "",
+          address: o.customer?.address || "",
+          items: (o.items || []).map(item => ({
+            name: item.name,
+            variant: item.quantity,
+            qty: item.count,
+            price: item.price,
+            imageUrl: item.imageUrl || ""
+          })),
+          total: o.total,
+          status: o.status === "Order Sent to Admin" ? "Pending" : o.status,
+          date: o.createdAt ? o.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+          payment: o.paymentMethod ? o.paymentMethod.toUpperCase() : "COD"
+        }));
+        setOrders(mapped);
+      } else {
+        console.error("Failed to fetch orders:", res.statusText);
+      }
+    } catch (err) {
+      console.error("Fetch orders error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   const filtered = orders.filter(o => {
     const matchStatus = filter === "All" || o.status === filter;
@@ -30,9 +69,24 @@ export default function OrdersPage() {
     return matchStatus && matchSearch;
   });
 
-  function updateStatus(orderId, status) {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-    if (selectedOrder?.id === orderId) setSelectedOrder(prev => ({ ...prev, status }));
+  async function updateStatus(orderId, status) {
+    const backendStatus = status === "Pending" ? "Order Sent to Admin" : status;
+    try {
+      const res = await adminFetch(`http://localhost:8000/api/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: backendStatus })
+      });
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+        if (selectedOrder?.id === orderId) setSelectedOrder(prev => ({ ...prev, status }));
+      } else {
+        alert("Failed to update status on server");
+      }
+    } catch (err) {
+      console.error("Update status error:", err);
+      alert("Error updating order status: " + err.message);
+    }
   }
 
   function cancelOrder(orderId) {
@@ -101,7 +155,9 @@ export default function OrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading orders...</td></tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>No orders found</td></tr>
               ) : filtered.map(order => (
                 <tr key={order.id}>

@@ -18,13 +18,12 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const ok = login(email, password);
+    const res = await login(email, password);
     setLoading(false);
-    if (ok) {
+    if (res.success) {
       router.push("/admin");
     } else {
-      setError("Invalid email or password.");
+      setError(res.message || "Invalid email or password.");
     }
   }
 
@@ -46,21 +45,21 @@ export default function LoginPage() {
             <div>
               <div className="font-extrabold text-xl text-white">
                 <Image
-              className="invert"
-              src="/logo2.png"
-              alt="Dronagiri Farm Logo"
-               width={200}
-               height={150}
-               loading="eager"
-               style={{ width: "100%", height: "auto" }}
-                 />
+                  className="invert"
+                  src="/logo2.png"
+                  alt="Dronagiri Farm Logo"
+                  width={200}
+                  height={150}
+                  loading="eager"
+                  style={{ width: "100%", height: "auto" }}
+                />
               </div>
               <div className="text-[13px] text-white/55">Admin Portal</div>
             </div>
           </div>
 
           <h2 className="text-[34px] font-black text-white leading-tight mb-4">
-            Manage your<br/>
+            Manage your<br />
             <span className="text-green-300">farm business</span>
           </h2>
           <p className="text-sm text-white/60 leading-relaxed mb-10 max-w-[320px]">
@@ -133,8 +132,8 @@ export default function LoginPage() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted p-1 hover:text-text"
                 >
                   {showPass
-                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                   }
                 </button>
               </div>
@@ -156,19 +155,13 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin">
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
                   Signing in…
                 </>
               ) : "Sign In →"}
             </button>
           </form>
-
-          {/* Hint */}
-          <div className="mt-5 p-4 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700 flex items-center justify-center gap-2">
-            <Icon name="sprout" size={14} className="text-green-600 shrink-0" />
-            <span>Demo: <strong>admin@dronagiri.com</strong> / <strong>admin123</strong></span>
-          </div>
 
           <p className="text-center mt-4 text-xs text-text-dim">
             Dronagiri Farm © {new Date().getFullYear()} · All rights reserved

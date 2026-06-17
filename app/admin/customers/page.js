@@ -1,27 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import { CUSTOMERS, ORDERS } from "../lib/mockData";
+import { useState, useEffect } from "react";
+import { adminFetch } from "../lib/auth";
+
+const BACKEND_URL = "http://localhost:8000/api/admins/customers";
+
+const stringHash = (str) => {
+  if (!str) return 0;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash);
+};
 
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const filtered = CUSTOMERS.filter(c => {
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const res = await adminFetch(BACKEND_URL);
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data);
+      } else {
+        console.error("Failed to fetch customers:", res.statusText);
+      }
+    } catch (err) {
+      console.error("Fetch customers error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const filtered = customers.filter(c => {
     const q = search.toLowerCase();
-    return !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.phone.includes(q);
+    return !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.phone && c.phone.includes(q));
   });
 
-  const topCustomer = [...CUSTOMERS].sort((a, b) => b.totalSpent - a.totalSpent)[0];
+  const topCustomer = [...customers].sort((a, b) => b.totalSpent - a.totalSpent)[0] || { name: "N/A", totalSpent: 0 };
+  const totalSpentAll = customers.reduce((s, c) => s + c.totalSpent, 0);
+  const avgOrderVal = customers.length ? Math.round(customers.reduce((s, c) => s + (c.orders ? c.totalSpent / c.orders : 0), 0) / customers.length) : 0;
+  const topSpenderName = topCustomer && topCustomer.name && topCustomer.name !== "N/A" ? topCustomer.name.split(" ")[0] : "—";
 
   return (
     <div>
       {/* Summary */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
         {[
-          { label: "Total Customers", value: CUSTOMERS.length, color: "#15803d" },
-          { label: "Total Revenue", value: `₹${CUSTOMERS.reduce((s, c) => s + c.totalSpent, 0).toLocaleString("en-IN")}`, color: "#b45309" },
-          { label: "Avg Order Value", value: `₹${Math.round(CUSTOMERS.reduce((s, c) => s + c.totalSpent / c.orders, 0) / CUSTOMERS.length)}`, color: "#1d4ed8" },
-          { label: "Top Spender", value: topCustomer.name.split(" ")[0], color: "#7c3aed" },
+          { label: "Total Customers", value: customers.length, color: "#15803d" },
+          { label: "Total Revenue", value: `₹${totalSpentAll.toLocaleString("en-IN")}`, color: "#b45309" },
+          { label: "Avg Order Value", value: `₹${avgOrderVal.toLocaleString("en-IN")}`, color: "#1d4ed8" },
+          { label: "Top Spender", value: topSpenderName, color: "#7c3aed" },
         ].map(s => (
           <div key={s.label} className="admin-card animate-fadeInUp" style={{ padding: "16px 18px", borderLeft: `3px solid ${s.color}` }}>
             <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>{s.label}</div>
@@ -52,7 +89,9 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading customers list...</td></tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>No customers found</td></tr>
               ) : filtered.map(c => (
                 <tr key={c.id}>
@@ -60,7 +99,7 @@ export default function CustomersPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{
                         width: 34, height: 34, borderRadius: "50%",
-                        background: `hsl(${(c.id * 47) % 360}, 55%, 35%)`,
+                        background: `hsl(${stringHash(String(c.id)) % 360}, 55%, 35%)`,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 14, fontWeight: 700, color: "white", flexShrink: 0,
                       }}>

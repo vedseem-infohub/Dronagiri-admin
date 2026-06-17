@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "../components/Modal";
 import Icon from "../components/Icon";
+import { adminFetch } from "../lib/auth";
 
 // ── Role definitions ─────────────────────────────────────────────
 const ROLES = [
@@ -283,38 +284,139 @@ function AdminForm({ initial, onSave, onCancel }) {
   );
 }
 
+const BACKEND_URL = "http://localhost:8000/api/admins";
+
 // ── Main Page ────────────────────────────────────────────────────
 export default function AdminUsersPage() {
-  const [admins, setAdmins] = useState(INITIAL_ADMINS);
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [addModal, setAddModal] = useState(false);
   const [editAdmin, setEditAdmin] = useState(null);
   const [deleteAdmin, setDeleteAdmin] = useState(null);
   const [showRoles, setShowRoles] = useState(false);
 
-  function handleAdd(data) {
-    const newAdmin = {
-      ...data,
-      id: Date.now(),
-      added: new Date().toISOString().split("T")[0],
-      lastLogin: "—",
-      avatar: data.name.charAt(0).toUpperCase(),
-    };
-    setAdmins(prev => [newAdmin, ...prev]);
-    setAddModal(false);
+  const fetchAdmins = async () => {
+    try {
+      setLoading(true);
+      const res = await adminFetch(BACKEND_URL);
+      if (res.ok) {
+        const data = await res.json();
+        setAdmins(data);
+      } else {
+        console.error("Failed to fetch admins:", res.statusText);
+      }
+    } catch (err) {
+      console.error("Fetch admins error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  async function handleAdd(data) {
+    try {
+      const res = await adminFetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const newAdmin = await res.json();
+        setAdmins(prev => [newAdmin, ...prev]);
+        setAddModal(false);
+      } else {
+        let errMsg = "Failed to add admin user";
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch {}
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error("Add admin error:", err);
+      alert(`Error connecting to backend: ${err.message}`);
+    }
   }
 
-  function handleEdit(data) {
-    setAdmins(prev => prev.map(a => a.id === editAdmin.id ? { ...a, ...data } : a));
-    setEditAdmin(null);
+  async function handleEdit(data) {
+    try {
+      const res = await adminFetch(`${BACKEND_URL}/${editAdmin.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const updatedAdmin = await res.json();
+        setAdmins(prev => prev.map(a => a.id === editAdmin.id ? updatedAdmin : a));
+        setEditAdmin(null);
+      } else {
+        let errMsg = "Failed to update admin user";
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch {}
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error("Edit admin error:", err);
+      alert(`Error connecting to backend: ${err.message}`);
+    }
   }
 
-  function handleDelete() {
-    setAdmins(prev => prev.filter(a => a.id !== deleteAdmin.id));
-    setDeleteAdmin(null);
+  async function handleDelete() {
+    try {
+      const res = await adminFetch(`${BACKEND_URL}/${deleteAdmin.id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        setAdmins(prev => prev.filter(a => a.id !== deleteAdmin.id));
+        setDeleteAdmin(null);
+      } else {
+        let errMsg = "Failed to delete admin user";
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch {}
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error("Delete admin error:", err);
+      alert(`Error connecting to backend: ${err.message}`);
+    }
   }
 
-  function toggleStatus(id) {
-    setAdmins(prev => prev.map(a => a.id === id ? { ...a, status: a.status === "active" ? "inactive" : "active" } : a));
+  async function toggleStatus(id) {
+    const admin = admins.find(a => a.id === id);
+    if (!admin) return;
+    const nextStatus = admin.status === "active" ? "inactive" : "active";
+    try {
+      const res = await adminFetch(`${BACKEND_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          status: nextStatus
+        })
+      });
+      if (res.ok) {
+        const updatedAdmin = await res.json();
+        setAdmins(prev => prev.map(a => a.id === id ? updatedAdmin : a));
+      } else {
+        let errMsg = "Failed to update admin status";
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch {}
+        alert(errMsg);
+      }
+    } catch (err) {
+      console.error("Toggle admin status error:", err);
+    }
   }
 
   const activeCount = admins.filter(a => a.status === "active").length;
@@ -374,7 +476,11 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {admins.map((admin, i) => {
+              {loading ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>Loading admin accounts...</td></tr>
+              ) : admins.length === 0 ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--text-muted)", padding: 40 }}>No admins found</td></tr>
+              ) : admins.map((admin, i) => {
                 const role = getRoleConfig(admin.role);
                 return (
                   <tr key={admin.id}>

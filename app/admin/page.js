@@ -2,22 +2,89 @@
 
 import { useRouter } from "next/navigation";
 import StatsCard from "./components/StatsCard";
-import { ORDERS, PRODUCTS, CUSTOMERS, DAILY_SALES } from "./lib/mockData";
+import { useState, useEffect } from "react";
+import { ORDERS, CUSTOMERS, DAILY_SALES } from "./lib/mockData";
 import Icon from "./components/Icon";
+import { adminFetch } from "./lib/auth";
+
+const BACKEND_URL = "http://localhost:8000/api/products";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const totalRevenue = ORDERS.filter(o => o.status === "Delivered").reduce((sum, o) => sum + o.total, 0);
-  const pendingOrders = ORDERS.filter(o => o.status === "Pending" || o.status === "Confirmed").length;
-  const lowStock = PRODUCTS.filter(p => p.stock <= 10).length;
-  const todayRevenue = DAILY_SALES[DAILY_SALES.length - 1].revenue;
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true);
+        const prodRes = await adminFetch("http://localhost:8000/api/products?includeInactive=true");
+        if (prodRes.ok) {
+          const data = await prodRes.json();
+          setProducts(data);
+        }
 
-  const recentOrders = ORDERS.slice(0, 6);
+        const ordRes = await adminFetch("http://localhost:8000/api/orders/all");
+        if (ordRes.ok) {
+          const data = await ordRes.json();
+          const mapped = data.map(o => ({
+            id: o.orderId,
+            customer: o.customer?.name || "Anonymous",
+            phone: o.customer?.phone || "",
+            address: o.customer?.address || "",
+            items: (o.items || []).map(item => ({
+              name: item.name,
+              variant: item.quantity,
+              qty: item.count,
+              price: item.price,
+              imageUrl: item.imageUrl || ""
+            })),
+            total: o.total,
+            status: o.status === "Order Sent to Admin" ? "Pending" : o.status,
+            date: o.createdAt ? o.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+            payment: o.paymentMethod ? o.paymentMethod.toUpperCase() : "COD"
+          }));
+          setOrders(mapped);
+        }
+      } catch (err) {
+        console.error("Error loading dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, []);
+
+  const totalRevenue = orders.filter(o => o.status === "Delivered").reduce((sum, o) => sum + o.total, 0);
+  const pendingOrders = orders.filter(o => o.status === "Pending" || o.status === "Confirmed").length;
+  const lowStock = products.filter(p => p.stock <= 10).length;
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayRevenue = orders
+    .filter(o => o.status === "Delivered" && o.date === todayStr)
+    .reduce((sum, o) => sum + o.total, 0);
+
+  const recentOrders = orders.slice(0, 6);
 
   const statusColor = { Pending: "amber", Confirmed: "blue", Shipped: "purple", Delivered: "green", Cancelled: "red" };
   const statusBadge = { Pending: "badge-amber", Confirmed: "badge-blue", Shipped: "badge-purple", Delivered: "badge-green", Cancelled: "badge-red" };
   const amtColor = "#15803d";
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 12 }}>
+        <div style={{ width: 40, height: 40, border: "4px solid #22c55e", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Harvesting dashboard insights...</p>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -95,13 +162,13 @@ export default function DashboardPage() {
           <div className="admin-card animate-fadeInUp p-5">
             <h2 className="text-sm font-bold text-text mb-3.5">Top Products</h2>
             <div className="flex flex-col gap-2.5">
-              {PRODUCTS.sort((a, b) => b.sold - a.sold).slice(0, 5).map((p, i) => (
+              {products.slice().sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 5).map((p, i) => (
                 <div key={p.id} className="flex items-center gap-2.5">
                   <span className={`w-5.5 h-5.5 rounded-md flex items-center justify-center text-[11px] font-bold ${i === 0 ? "bg-amber-100 text-amber-800" : "bg-surface-2 text-text-muted"}`}>
                     {i + 1}
                   </span>
                   <span className="flex-1 text-xs text-text truncate">{p.name}</span>
-                  <span className="text-xs text-text-muted font-semibold whitespace-nowrap">{p.sold} units</span>
+                  <span className="text-xs text-text-muted font-semibold whitespace-nowrap">{(p.sold || 0)} units</span>
                 </div>
               ))}
             </div>
