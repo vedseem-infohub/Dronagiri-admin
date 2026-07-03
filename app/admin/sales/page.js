@@ -103,13 +103,13 @@ export default function SalesPage() {
     const loadSalesData = async () => {
       try {
         setLoading(true);
-        const prodRes = await adminFetch("http://localhost:8000/api/products?includeInactive=true");
+        const prodRes = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products?includeInactive=true`);
         if (prodRes.ok) {
           const data = await prodRes.json();
           setProducts(data);
         }
 
-        const ordRes = await adminFetch("http://localhost:8000/api/orders/all");
+        const ordRes = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/orders/all`);
         if (ordRes.ok) {
           const data = await ordRes.json();
           const mapped = data.map(o => ({

@@ -15,7 +15,7 @@ export default function StockPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await adminFetch("http://localhost:8000/api/products?includeInactive=true");
+      const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products?includeInactive=true`);
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
@@ -55,7 +55,7 @@ export default function StockPage() {
     const val = parseInt(editValue, 10);
     if (!isNaN(val) && val >= 0) {
       try {
-        const res = await adminFetch(`http://localhost:8000/api/products/${id}`, {
+        const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ stock: val })
@@ -79,7 +79,7 @@ export default function StockPage() {
     if (!p) return;
     const newVal = Math.max(0, p.stock + delta);
     try {
-      const res = await adminFetch(`http://localhost:8000/api/products/${id}`, {
+      const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stock: newVal })
