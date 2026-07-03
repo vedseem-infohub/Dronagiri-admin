@@ -7,7 +7,7 @@ import { ORDERS, CUSTOMERS, DAILY_SALES } from "./lib/mockData";
 import Icon from "./components/Icon";
 import { adminFetch } from "./lib/auth";
 
-const BACKEND_URL = "http://localhost:8000/api/products";
+const BACKEND_URL = `${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products`;
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -19,13 +19,13 @@ export default function DashboardPage() {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
-        const prodRes = await adminFetch("http://localhost:8000/api/products?includeInactive=true");
+        const prodRes = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products?includeInactive=true`);
         if (prodRes.ok) {
           const data = await prodRes.json();
           setProducts(data);
         }
 
-        const ordRes = await adminFetch("http://localhost:8000/api/orders/all");
+        const ordRes = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/orders/all`);
         if (ordRes.ok) {
           const data = await ordRes.json();
           const mapped = data.map(o => ({

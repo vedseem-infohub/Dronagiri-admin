@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { adminFetch } from "../lib/auth";
 
-const BACKEND_URL = "http://localhost:8000/api/admins/customers";
+const BACKEND_URL = `${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/admins/customers`;
 
 const stringHash = (str) => {
   if (!str) return 0;
