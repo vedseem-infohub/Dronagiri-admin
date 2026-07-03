@@ -45,7 +45,8 @@ export default function OrdersPage() {
           total: o.total,
           status: o.status === "Order Sent to Admin" ? "Pending" : o.status,
           date: o.createdAt ? o.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
-          payment: o.paymentMethod ? o.paymentMethod.toUpperCase() : "COD"
+          payment: o.paymentMethod ? (o.paymentMethod === 'online' ? 'ONLINE' : o.paymentMethod.toUpperCase()) : "COD",
+          paymentStatus: o.paymentStatus || (o.paymentMethod === 'online' ? 'Paid' : 'Pending'),
         }));
         setOrders(mapped);
       } else {
@@ -148,7 +149,8 @@ export default function OrdersPage() {
                 <th>Customer</th>
                 <th>Items</th>
                 <th>Total</th>
-                <th>Payment</th>
+                <th>Payment Method</th>
+                <th>Payment Status</th>
                 <th>Status</th>
                 <th>Date</th>
                 <th>Actions</th>
@@ -174,7 +176,10 @@ export default function OrdersPage() {
                   <td style={{ color: "var(--text-muted)", fontSize: 13 }}>{order.items.length} item{order.items.length > 1 ? "s" : ""}</td>
                   <td style={{ fontWeight: 700, color: "#15803d" }}>₹{order.total.toLocaleString("en-IN")}</td>
                   <td>
-                    <span className={`badge ${order.payment === "UPI" ? "badge-blue" : "badge-gray"}`}>{order.payment}</span>
+                    <span className={`badge ${order.payment === "ONLINE" || order.payment === "UPI" ? "badge-blue" : "badge-gray"}`}>{order.payment}</span>
+                  </td>
+                  <td>
+                    <span className={`badge ${order.paymentStatus === "Paid" ? "badge-green" : order.paymentStatus === "Failed" ? "badge-red" : "badge-amber"}`}>{order.paymentStatus}</span>
                   </td>
                   <td><span className={`badge ${statusBadge[order.status]}`}>{order.status}</span></td>
                   <td style={{ color: "var(--text-muted)", fontSize: 13 }}>{new Date(order.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td>
@@ -248,8 +253,12 @@ export default function OrdersPage() {
             {/* Total */}
             <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, marginBottom: 20 }}>
               <div>
-                <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Payment: </span>
-                <span className={`badge ${selectedOrder.payment === "UPI" ? "badge-blue" : "badge-gray"}`}>{selectedOrder.payment}</span>
+                <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Payment Method: </span>
+                <span className={`badge ${selectedOrder.payment === "ONLINE" || selectedOrder.payment === "UPI" ? "badge-blue" : "badge-gray"}`}>{selectedOrder.payment}</span>
+              </div>
+              <div style={{ marginLeft: 16 }}>
+                <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Payment Status: </span>
+                <span className={`badge ${selectedOrder.paymentStatus === "Paid" ? "badge-green" : selectedOrder.paymentStatus === "Failed" ? "badge-red" : "badge-amber"}`}>{selectedOrder.paymentStatus}</span>
               </div>
               <div style={{ fontWeight: 800, fontSize: 18, color: "#15803d" }}>₹{selectedOrder.total.toLocaleString("en-IN")}</div>
             </div>
