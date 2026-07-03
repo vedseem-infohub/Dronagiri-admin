@@ -6,7 +6,7 @@ const ADMIN_KEY = "dronagiri_admin_auth";
 
 export async function login(email, password) {
   try {
-    const res = await fetch("http://localhost:8000/api/auth/signin", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/auth/signin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -40,7 +40,7 @@ export async function login(email, password) {
 
 export async function logout() {
   try {
-    await fetch("http://localhost:8000/api/auth/logout", {
+    await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/auth/logout`, {
       credentials: "include"
     });
   } catch (err) {
