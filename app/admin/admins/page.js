@@ -284,7 +284,7 @@ function AdminForm({ initial, onSave, onCancel }) {
   );
 }
 
-const BACKEND_URL = "http://localhost:8000/api/admins";
+const BACKEND_URL = `${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/admins`;
 
 // ── Main Page ────────────────────────────────────────────────────
 export default function AdminUsersPage() {

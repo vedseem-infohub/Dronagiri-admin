@@ -7,7 +7,7 @@ import ProductForm from "../components/ProductForm";
 import Icon from "../components/Icon";
 import { adminFetch } from "../lib/auth";
 
-const BACKEND_URL = "http://localhost:8000/api/products";
+const BACKEND_URL = `${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products`;
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
