@@ -29,7 +29,7 @@ export async function login(email, password) {
       try {
         const err = await res.json();
         errMsg = err.message || errMsg;
-      } catch {}
+      } catch { }
       return { success: false, message: errMsg };
     }
   } catch (err) {

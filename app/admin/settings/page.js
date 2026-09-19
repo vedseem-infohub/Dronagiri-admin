@@ -16,7 +16,7 @@ export default function SettingsPage() {
     phone: "+91 99999 99999",
     whatsapp: "+91 99999 99999",
     address: "Dronagiri Village, Pune District, Maharashtra - 412311",
-    website: "https://customer-frontend-gilt.vercel.app",
+    website: "https://dronagirifarms.co.in",
   });
 
   const [shipping, setShipping] = useState({
