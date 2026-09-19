@@ -35,7 +35,7 @@ export default function ProductsPage() {
             const text = await res.text();
             const match = text.match(/<pre>([\s\S]*?)<\/pre>/) || text.match(/<title>([\s\S]*?)<\/title>/);
             errMsg = match ? match[1].trim() : text.slice(0, 150) || errMsg;
-          } catch {}
+          } catch { }
         }
         console.error(errMsg);
         alert(errMsg);
@@ -80,7 +80,7 @@ export default function ProductsPage() {
             const text = await res.text();
             const match = text.match(/<pre>([\s\S]*?)<\/pre>/) || text.match(/<title>([\s\S]*?)<\/title>/);
             errMsg = match ? match[1].trim() : text.slice(0, 150) || errMsg;
-          } catch {}
+          } catch { }
         }
         alert(errMsg);
       }
@@ -111,7 +111,7 @@ export default function ProductsPage() {
             const text = await res.text();
             const match = text.match(/<pre>([\s\S]*?)<\/pre>/) || text.match(/<title>([\s\S]*?)<\/title>/);
             errMsg = match ? match[1].trim() : text.slice(0, 150) || errMsg;
-          } catch {}
+          } catch { }
         }
         alert(errMsg);
       }
@@ -139,7 +139,7 @@ export default function ProductsPage() {
             const text = await res.text();
             const match = text.match(/<pre>([\s\S]*?)<\/pre>/) || text.match(/<title>([\s\S]*?)<\/title>/);
             errMsg = match ? match[1].trim() : text.slice(0, 150) || errMsg;
-          } catch {}
+          } catch { }
         }
         alert(errMsg);
       }
@@ -177,7 +177,7 @@ export default function ProductsPage() {
           <h2 style={{ fontSize: 15, color: "var(--text-muted)" }}>{products.length} products total</h2>
         </div>
         <button className="btn btn-primary" onClick={() => setAddModal(true)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           Add New Product
         </button>
       </div>
@@ -186,7 +186,7 @@ export default function ProductsPage() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
         <div style={{ position: "relative", flex: "1 1 240px", maxWidth: 320 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)" }}>
-            <path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" />
           </svg>
           <input className="admin-input" style={{ paddingLeft: 34 }} placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
@@ -280,14 +280,14 @@ export default function ProductsPage() {
                         title="Edit"
                         onClick={() => setEditProduct(p)}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                       </button>
                       <button
                         className="btn btn-icon btn-danger"
                         title="Delete"
                         onClick={() => setDeleteProduct(p)}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>
                       </button>
                     </div>
                   </td>

@@ -65,7 +65,7 @@ export default function Sidebar({ open, onClose }) {
         {/* View site link */}
         <div className="pt-3 pb-1 px-3.5">
           <a
-            href="https://customer-frontend-gilt.vercel.app"
+            href={process.env.NEXT_PUBLIC_CUSTOMER_URL || "https://dronagirifarms.co.in"}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/6 border border-white/10 text-white/60 text-xs font-medium no-underline transition-all duration-200 hover:bg-white/10 hover:text-white/90"

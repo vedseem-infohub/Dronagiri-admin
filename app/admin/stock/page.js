@@ -15,7 +15,7 @@ export default function StockPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products?includeInactive=true`);
+      const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "https://dronagiri-backend-e4ja.onrender.com"}/api/products?includeInactive=true`);
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
@@ -36,9 +36,9 @@ export default function StockPage() {
     const matchSearch = !q || p.name.toLowerCase().includes(q);
     const matchFilter =
       filter === "all" ? true :
-      filter === "low" ? p.stock <= 10 :
-      filter === "out" ? p.stock === 0 :
-      filter === "ok" ? p.stock > 10 : true;
+        filter === "low" ? p.stock <= 10 :
+          filter === "out" ? p.stock === 0 :
+            filter === "ok" ? p.stock > 10 : true;
     return matchSearch && matchFilter;
   });
 
@@ -55,7 +55,7 @@ export default function StockPage() {
     const val = parseInt(editValue, 10);
     if (!isNaN(val) && val >= 0) {
       try {
-        const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products/${id}`, {
+        const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "https://dronagiri-backend-e4ja.onrender.com"}/api/products/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ stock: val })
@@ -79,7 +79,7 @@ export default function StockPage() {
     if (!p) return;
     const newVal = Math.max(0, p.stock + delta);
     try {
-      const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products/${id}`, {
+      const res = await adminFetch(`${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "https://dronagiri-backend-e4ja.onrender.com"}/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stock: newVal })
@@ -104,10 +104,10 @@ export default function StockPage() {
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Total Stock",   value: totalStock + " units", color: "#15803d" },
-          { label: "In Stock",    value: okCount  + " products", color: "#15803d" },
-          { label: "Low Stock",   value: lowCount + " products", color: "#b45309" },
-          { label: "Out of Stock",value: outCount + " products", color: "#dc2626" },
+          { label: "Total Stock", value: totalStock + " units", color: "#15803d" },
+          { label: "In Stock", value: okCount + " products", color: "#15803d" },
+          { label: "Low Stock", value: lowCount + " products", color: "#b45309" },
+          { label: "Out of Stock", value: outCount + " products", color: "#dc2626" },
         ].map(s => (
           <div key={s.label} className="admin-card animate-fadeInUp py-4 px-4.5" style={{ borderLeft: `3px solid ${s.color}` }}>
             <div className="text-[11px] text-text-muted font-semibold uppercase tracking-wider mb-1.5">{s.label}</div>
@@ -119,7 +119,7 @@ export default function StockPage() {
       {/* Filters */}
       <div className="flex gap-2.5 flex-wrap mb-5">
         <div className="relative flex-[1_1_220px]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg>
           <input className="admin-input pl-9" placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-1.5">
@@ -131,11 +131,10 @@ export default function StockPage() {
           ].map(f => (
             <button
               key={f.key}
-              className={`btn btn-sm flex items-center gap-1.5 ${
-                filter === f.key
+              className={`btn btn-sm flex items-center gap-1.5 ${filter === f.key
                   ? "bg-green-600/10 text-green-700 border border-green-600/30"
                   : "bg-surface-2 text-text-muted border border-border"
-              }`}
+                }`}
               onClick={() => setFilter(f.key)}
             >
               {f.dot && <span className={`w-2 h-2 rounded-full ${f.dot}`} />}
@@ -231,20 +230,20 @@ export default function StockPage() {
                           onClick={() => adjustStock(p.id, -1)}
                           disabled={p.stock === 0}
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
                         </button>
                         <button
                           className="btn btn-icon btn-secondary p-1.5"
                           onClick={() => adjustStock(p.id, 1)}
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><line x1="12" y1="5" x2="12" y2="19"/></svg>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /><line x1="12" y1="5" x2="12" y2="19" /></svg>
                         </button>
                         <button
                           className="btn btn-icon btn-secondary p-1.5"
                           title="Edit quantity"
                           onClick={() => startEdit(p)}
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z" /></svg>
                         </button>
                       </div>
                     </td>
