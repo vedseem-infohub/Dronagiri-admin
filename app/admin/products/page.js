@@ -1,22 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { CATEGORIES } from "../lib/mockData";
+import { useState, useEffect, useRef, useMemo } from "react";
+import Link from "next/link";
 import Modal from "../components/Modal";
 import ProductForm from "../components/ProductForm";
 import Icon from "../components/Icon";
 import { adminFetch } from "../lib/auth";
+import { getOptimizedImageUrl } from "../lib/imageUtils";
 
-const BACKEND_URL = `${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "http://localhost:8000"}/api/products`;
+const BACKEND_URL = `${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "https://dronagiri-backend-e4ja.onrender.com"}/api/products`;
+const CATEGORIES_URL = `${process.env.NEXT_PUBLIC_API_BACKEND_URL || process.env.NEXT_API_BACKEND_URL || "https://dronagiri-backend-e4ja.onrender.com"}/api/categories`;
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [addModal, setAddModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isAddingRef = useRef(false);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await adminFetch(CATEGORIES_URL);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setCategoriesList(data.map((c) => c.name));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch dynamic categories:", err);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -50,7 +68,24 @@ export default function ProductsPage() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  const allCategories = useMemo(() => {
+    const set = new Set(categoriesList);
+    products.forEach((p) => {
+      if (p.category) set.add(p.category);
+    });
+    return Array.from(set);
+  }, [categoriesList, products]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = { All: products.length };
+    for (const c of allCategories) {
+      counts[c] = products.filter(p => p.category === c).length;
+    }
+    return counts;
+  }, [allCategories, products]);
 
   const filtered = products.filter(p => {
     const q = search.toLowerCase();
@@ -60,6 +95,9 @@ export default function ProductsPage() {
   });
 
   async function handleAdd(data) {
+    if (isAddingRef.current) return;
+    isAddingRef.current = true;
+
     try {
       const res = await adminFetch(BACKEND_URL, {
         method: "POST",
@@ -68,7 +106,10 @@ export default function ProductsPage() {
       });
       if (res.ok) {
         const newProduct = await res.json();
-        setProducts(prev => [newProduct, ...prev]);
+        setProducts(prev => {
+          if (prev.some(p => p.id === newProduct.id)) return prev;
+          return [newProduct, ...prev];
+        });
         setAddModal(false);
       } else {
         let errMsg = "Failed to add product";
@@ -87,6 +128,10 @@ export default function ProductsPage() {
     } catch (err) {
       console.error("Add product error:", err);
       alert(`Error connecting to backend: ${err.message}`);
+    } finally {
+      setTimeout(() => {
+        isAddingRef.current = false;
+      }, 1000);
     }
   }
 
@@ -176,29 +221,100 @@ export default function ProductsPage() {
         <div>
           <h2 style={{ fontSize: 15, color: "var(--text-muted)" }}>{products.length} products total</h2>
         </div>
-        <button className="btn btn-primary" onClick={() => setAddModal(true)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Add New Product
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/categories" className="btn btn-secondary text-xs sm:text-sm">
+            <Icon name="tag" size={14} />
+            <span>Manage Categories</span>
+          </Link>
+          <button className="btn btn-primary text-xs sm:text-sm shadow-md" onClick={() => setAddModal(true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            <span>Add New Product</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-        <div style={{ position: "relative", flex: "1 1 240px", maxWidth: 320 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)" }}>
-            <path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" />
+      {/* Search & Category Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center mb-5">
+        {/* Search input */}
+        <div className="relative flex-1 min-w-0 w-full">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            style={{
+              position: "absolute",
+              left: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--text-dim)",
+              pointerEvents: "none",
+            }}
+          >
+            <path d="m21 21-4.34-4.34" />
+            <circle cx="11" cy="11" r="8" />
           </svg>
-          <input className="admin-input" style={{ paddingLeft: 34 }} placeholder="Search products…" value={search} onChange={e => setSearch(e.target.value)} />
+          <input
+            className="admin-input"
+            style={{ paddingLeft: 34, paddingRight: search ? 30 : 12, margin: 0, width: "100%", height: 42 }}
+            placeholder="Search products by name or Hindi…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              style={{
+                position: "absolute",
+                right: 8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-dim)",
+                fontSize: 12,
+                padding: "4px 8px",
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
-        <select
-          className="admin-input admin-select"
-          style={{ flex: "0 0 180px" }}
-          value={categoryFilter}
-          onChange={e => setCategoryFilter(e.target.value)}
-        >
-          <option value="All">All Categories</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+
+        {/* Category Dropdown */}
+        <div className="relative w-full sm:w-60 md:w-64 shrink-0">
+          <select
+            className="admin-input admin-select"
+            style={{ margin: 0, width: "100%", height: 42, cursor: "pointer" }}
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="All">All Categories ({products.length})</option>
+            {allCategories.map((c) => (
+              <option key={c} value={c}>
+                {c} ({categoryCounts[c] || 0})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Clear filters badge if active */}
+        {(search || categoryFilter !== "All") && (
+          <button
+            onClick={() => {
+              setSearch("");
+              setCategoryFilter("All");
+            }}
+            className="btn btn-sm btn-secondary self-start sm:self-center shrink-0"
+            style={{ padding: "8px 14px", fontSize: 12, height: 42 }}
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -232,7 +348,13 @@ export default function ProductsPage() {
                         border: "1.5px solid var(--border)",
                       }}>
                         {p.imageUrl ? (
-                          <img src={p.imageUrl} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <img
+                            src={getOptimizedImageUrl(p.imageUrl, { width: 120 })}
+                            alt={p.name}
+                            loading="lazy"
+                            decoding="async"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
                         ) : p.image === "🌿" ? (
                           <Icon name="sprout" size={20} className="text-green-600" />
                         ) : (
@@ -300,12 +422,12 @@ export default function ProductsPage() {
 
       {/* Add Modal */}
       <Modal open={addModal} onClose={() => setAddModal(false)} title="Add New Product" maxWidth={600}>
-        <ProductForm onSave={handleAdd} onCancel={() => setAddModal(false)} />
+        <ProductForm categories={allCategories} onSave={handleAdd} onCancel={() => setAddModal(false)} />
       </Modal>
 
       {/* Edit Modal */}
       <Modal open={!!editProduct} onClose={() => setEditProduct(null)} title={`Edit: ${editProduct?.name}`} maxWidth={600}>
-        <ProductForm initial={editProduct} onSave={handleEdit} onCancel={() => setEditProduct(null)} />
+        <ProductForm initial={editProduct} categories={allCategories} onSave={handleEdit} onCancel={() => setEditProduct(null)} />
       </Modal>
 
       {/* Delete Confirm */}

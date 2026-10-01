@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import Icon from "./Icon";
-import { CATEGORIES } from "../lib/mockData";
 
 const emptyVariant = { size: "", price: "" };
 
@@ -85,37 +84,42 @@ function ImageUploadZone({ label, image, onImage, hint }) {
   );
 }
 
-export default function ProductForm({ initial, onSave, onCancel }) {
+export default function ProductForm({ initial, onSave, onCancel, categories = [] }) {
   const isEdit = !!initial;
 
+  const categoryOptions = Array.from(new Set([
+    ...(Array.isArray(categories) ? categories : []),
+    ...(initial?.category ? [initial.category] : []),
+  ]));
+
   const [form, setForm] = useState(initial || {
-    name: "", nameHindi: "", category: CATEGORIES[0],
+    name: "", nameHindi: "", category: categoryOptions[0] || "",
     description: "", variants: [{ ...emptyVariant }],
     stock: 0, active: true,
     imageUrl: null,
     imageUrl2: null,
   });
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   function update(field, value) {
-    setForm(f => ({ ...f, [field]: value }));
-    setErrors(e => ({ ...e, [field]: undefined }));
+    setForm(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
   }
 
-  function updateVariant(idx, field, value) {
-    setForm(f => {
-      const variants = [...f.variants];
-      variants[idx] = { ...variants[idx], [field]: value };
-      return { ...f, variants };
-    });
+  function updateVariant(index, field, value) {
+    const next = form.variants.map((v, i) => i === index ? { ...v, [field]: value } : v);
+    setForm(prev => ({ ...prev, variants: next }));
   }
 
   function addVariant() {
-    setForm(f => ({ ...f, variants: [...f.variants, { ...emptyVariant }] }));
+    setForm(prev => ({ ...prev, variants: [...prev.variants, { ...emptyVariant }] }));
   }
 
-  function removeVariant(idx) {
-    setForm(f => ({ ...f, variants: f.variants.filter((_, i) => i !== idx) }));
+  function removeVariant(index) {
+    if (form.variants.length <= 1) return;
+    setForm(prev => ({ ...prev, variants: prev.variants.filter((_, i) => i !== index) }));
   }
 
   function validate() {
@@ -131,14 +135,27 @@ export default function ProductForm({ initial, onSave, onCancel }) {
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    if (isSubmittingRef.current || isSubmitting) return;
     if (!validate()) return;
-    onSave({
-      ...form,
-      stock: Number(form.stock) || 0,
-      variants: form.variants.map(v => ({ size: v.size, price: Number(v.price) })),
-    });
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+
+    try {
+      await onSave({
+        ...form,
+        stock: Number(form.stock) || 0,
+        variants: form.variants.map(v => ({ size: v.size, price: Number(v.price) })),
+      });
+    } finally {
+      // Re-enable in case form stays open on failure
+      setTimeout(() => {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+      }, 1000);
+    }
   }
 
   const inp = { className: "admin-input mb-1" };
@@ -170,7 +187,7 @@ export default function ProductForm({ initial, onSave, onCancel }) {
       <div className="mb-4">
         {fieldLabel("Category", true)}
         <select {...inp} className="admin-input admin-select mb-1" value={form.category} onChange={e => update("category", e.target.value)}>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
@@ -273,9 +290,24 @@ export default function ProductForm({ initial, onSave, onCancel }) {
 
       {/* ── Actions ── */}
       <div className="flex gap-2.5 justify-end pt-1 border-t border-border">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="btn btn-primary gap-1">
-          {isEdit ? (
+        <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+        <button
+          type="submit"
+          className="btn btn-primary gap-1"
+          disabled={isSubmitting}
+          style={{
+            opacity: isSubmitting ? 0.7 : 1,
+            cursor: isSubmitting ? "not-allowed" : "pointer",
+            minWidth: 120,
+            justifyContent: "center",
+          }}
+        >
+          {isSubmitting ? (
+            <>
+              <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+              <span>{isEdit ? "Saving..." : "Adding..."}</span>
+            </>
+          ) : isEdit ? (
             <>
               <Icon name="save" size={14} />
               Save Changes

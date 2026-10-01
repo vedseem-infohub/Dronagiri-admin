@@ -6,14 +6,16 @@ import Icon from "./Icon";
 import Image from "next/image";
 
 const navLinks = [
-  { href: "/admin",           label: "Dashboard",       icon: "grid" },
-  { href: "/admin/sales",     label: "Sales Tracking",  icon: "trending-up" },
-  { href: "/admin/orders",    label: "Orders",          icon: "shopping-bag" },
-  { href: "/admin/products",  label: "Products",        icon: "package" },
-  { href: "/admin/stock",     label: "Stock",           icon: "layers" },
-  { href: "/admin/customers", label: "Customers",       icon: "users" },
-  { href: "/admin/admins",    label: "Admin Users",     icon: "shield" },
-  { href: "/admin/settings",  label: "Settings",        icon: "settings" },
+  { href: "/admin",            label: "Dashboard",          icon: "grid" },
+  { href: "/admin/sales",      label: "Sales Tracking",     icon: "trending-up" },
+  { href: "/admin/orders",     label: "Orders",             icon: "shopping-bag" },
+  { href: "/admin/products",   label: "Products",           icon: "package" },
+  { href: "/admin/categories", label: "Categories",         icon: "tag" },
+  { href: "/admin/coupons",    label: "Coupons",            icon: "ticket" },
+  { href: "/admin/stock",      label: "Stock",              icon: "layers" },
+  { href: "/admin/customers",  label: "Customers",          icon: "users" },
+  { href: "/admin/admins",     label: "Admin Users",        icon: "shield" },
+  { href: "/admin/settings",   label: "Website & Settings", icon: "settings" },
 ];
 
 export default function Sidebar({ open, onClose }) {

@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import StatsCard from "./components/StatsCard";
 import { useState, useEffect } from "react";
-import { ORDERS, CUSTOMERS, DAILY_SALES } from "./lib/mockData";
 import Icon from "./components/Icon";
 import { adminFetch } from "./lib/auth";
 
@@ -91,7 +90,7 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7 stagger">
         <StatsCard label="Total Revenue" value={`₹${totalRevenue.toLocaleString("en-IN")}`} sub="From delivered orders" accent="green" icon={<Icon name="dollar-sign" />} trend={12} />
-        <StatsCard label="Today's Revenue" value={`₹${todayRevenue.toLocaleString("en-IN")}`} sub="Sun, 1 Jun" accent="amber" icon={<Icon name="trending-up" />} trend={8} />
+        <StatsCard label="Today's Revenue" value={`₹${todayRevenue.toLocaleString("en-IN")}`} sub={new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })} accent="amber" icon={<Icon name="trending-up" />} trend={8} />
         <StatsCard label="Pending Orders" value={pendingOrders} sub="Needs attention" accent="blue" icon={<Icon name="shopping-cart" />} />
         <StatsCard label="Low Stock Items" value={lowStock} sub="Items below 10 units" accent="red" icon={<Icon name="alert-triangle" />} trend={-5} />
       </div>
