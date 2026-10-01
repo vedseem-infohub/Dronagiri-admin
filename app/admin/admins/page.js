@@ -54,50 +54,6 @@ const ROLES = [
   },
 ];
 
-// ── Initial mock admins ──────────────────────────────────────────
-const INITIAL_ADMINS = [
-  {
-    id: 1,
-    name: "Ramesh Patil",
-    email: "ramesh@dronagiri.com",
-    role: "super_admin",
-    status: "active",
-    added: "2025-08-15",
-    lastLogin: "2026-06-01",
-    avatar: "R",
-  },
-  {
-    id: 2,
-    name: "Sneha Kulkarni",
-    email: "sneha@dronagiri.com",
-    role: "store_manager",
-    status: "active",
-    added: "2025-10-20",
-    lastLogin: "2026-05-30",
-    avatar: "S",
-  },
-  {
-    id: 3,
-    name: "Aakash Sharma",
-    email: "aakash@dronagiri.com",
-    role: "inventory_manager",
-    status: "active",
-    added: "2025-11-05",
-    lastLogin: "2026-05-28",
-    avatar: "A",
-  },
-  {
-    id: 4,
-    name: "Priti Desai",
-    email: "priti@dronagiri.com",
-    role: "sales_viewer",
-    status: "inactive",
-    added: "2026-01-12",
-    lastLogin: "2026-03-10",
-    avatar: "P",
-  },
-];
-
 const AVATAR_COLORS = ["#15803d", "#1d4ed8", "#7c3aed", "#b45309", "#0e7490", "#be185d"];
 
 function getRoleConfig(id) {

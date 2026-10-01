@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Icon from "../components/Icon";
 import { adminFetch } from "../lib/auth";
+import { getOptimizedImageUrl } from "../lib/imageUtils";
 
 export default function StockPage() {
   const [products, setProducts] = useState([]);
@@ -174,7 +175,13 @@ export default function StockPage() {
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-base overflow-hidden border border-border">
                           {p.imageUrl ? (
-                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                            <img
+                              src={getOptimizedImageUrl(p.imageUrl, { width: 120 })}
+                              alt={p.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <Icon name="sprout" size={16} className="text-green-600" />
                           )}

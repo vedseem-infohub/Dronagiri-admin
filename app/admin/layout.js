@@ -12,6 +12,8 @@ const pageTitles = {
   "/admin/sales": "Sales Tracking",
   "/admin/orders": "Orders",
   "/admin/products": "Products",
+  "/admin/categories": "Category Management",
+  "/admin/coupons": "Coupon Management",
   "/admin/stock": "Stock Management",
   "/admin/customers": "Customers",
   "/admin/admins": "Admin Users",
